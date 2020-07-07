@@ -20,7 +20,7 @@ class HashTable:
     Implement this.
     """
 
-    def __init__(self, capacity):
+    def __init__(self, capacity=MIN_CAPACITY):
         # Your code here
         self.capacity = capacity
         self.storage = [None] * capacity
@@ -34,6 +34,7 @@ class HashTable:
 
         Implement this.
         """
+        return len(self.storage)
         # Your code here
 
 
@@ -43,6 +44,16 @@ class HashTable:
 
         Implement this.
         """
+        load = 0
+        for x in self.storage:
+            if x != None:
+                load += 1
+        load_factor = load/self.capacity
+        if load_factor > 0.7:
+            self.resize(int(2*self.capacity))  
+        elif load_factor < 0.2:
+            self.resize(int(self.capacity/2)) 
+        return load_factor
         # Your code here
 
 
@@ -86,9 +97,23 @@ class HashTable:
 
         Implement this.
         """
-        self.storage[self.hash_index(key)] = value
+        current_value = self.storage[self.hash_index(key)]
+        if current_value == None:
+            self.storage[self.hash_index(key)] = HashTableEntry(key, value)
+        else:
+            new_entry = HashTableEntry(key, value)
+            new_entry.next = current_value
+            self.storage[self.hash_index(key)] = new_entry
+        self.get_load_factor()
         # Your code here
-
+    def rehash_put(self, key, value):
+        current_value = self.storage[self.hash_index(key)]
+        if current_value == None:
+            self.storage[self.hash_index(key)] = HashTableEntry(key, value)
+        else:
+            new_entry = HashTableEntry(key, value)
+            new_entry.next = current_value
+            self.storage[self.hash_index(key)] = new_entry
 
     def delete(self, key):
         """
@@ -98,9 +123,19 @@ class HashTable:
 
         Implement this.
         """
-        self.storage[self.hash_index(key)] = None
+        current_node = self.storage[self.hash_index(key)]
+        while current_node.next != None:
+            if current_node.key == key:
+                current_node.value = None
+                return
+            else:
+                current_node = current_node.next
+        if current_node.next == None:
+            if current_node.key == key:
+                current_node.value = None
+        self.get_load_factor()
+        
         # Your code here
-
 
     def get(self, key):
         """
@@ -110,7 +145,16 @@ class HashTable:
 
         Implement this.
         """
-        return self.storage[self.hash_index(key)]
+        current_node = None
+        for x in range(len(self.storage)):
+            current_node = self.storage[x]
+            while current_node != None:
+                if current_node.key == key:
+                    return current_node.value
+                else:
+                    current_node = current_node.next
+            
+                
         # Your code here
 
 
@@ -121,6 +165,22 @@ class HashTable:
 
         Implement this.
         """
+        pairs = {}
+        for x in range(len(self.storage)):
+            current_node = self.storage[x]
+            if current_node == None:
+               pass
+            else:
+                if current_node.next == None:
+                    pairs[current_node.key] = current_node.value
+                while current_node.next != None:
+                    pairs[current_node.key] = current_node.value
+                    current_node = current_node.next
+        self.capacity = new_capacity
+        self.storage = [None] * (self.capacity if self.capacity > 8 else 8)
+        
+        for key in pairs:
+            self.rehash_put(key, pairs[key])
         # Your code here
 
 
@@ -128,7 +188,7 @@ class HashTable:
 if __name__ == "__main__":
     ht = HashTable(8)
 
-    ht.put("line_1", "'Twas brillig, and the slithy toves")
+    ht.put("line_1", None)
     ht.put("line_2", "Did gyre and gimble in the wabe:")
     ht.put("line_3", "All mimsy were the borogoves,")
     ht.put("line_4", "And the mome raths outgrabe.")
@@ -146,7 +206,8 @@ if __name__ == "__main__":
     # Test storing beyond capacity
     for i in range(1, 13):
         print(ht.get(f"line_{i}"))
-
+    ht.delete("line 1")
+    print(ht.get("line 1"))
     # Test resizing
     old_capacity = ht.get_num_slots()
     ht.resize(ht.capacity * 2)
